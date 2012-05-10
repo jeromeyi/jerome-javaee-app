@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:context="http://www.springframework.org/schema/context"
+     xmlns:jee="http://www.springframework.org/schema/jee"
+    xsi:schemaLocation="
+    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+    http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.5.xsd
+    http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+     http://www.springframework.org/schema/jee
+       http://www.springframework.org/schema/jee/spring-jee-2.5.xsd"  default-autowire="byName">
+  
+   <context:component-scan base-package="com.sundoctor"/>
+	
+	<!-- 属性文件读入 -->
+	<bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:jdbc.properties</value>
+				<value>classpath:hibernate.properties</value>
+			</list>
+		</property>
+	</bean>
+	
+	<!-- 数据源定义,使用c3p0 连接池 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+	<property name="driverClass" value="${jdbc.driverClassName}" />	
+	<property name="jdbcUrl" value="${jdbc.url}" />	
+	<property name="user" value="${jdbc.username}" />	
+	<property name="password" value="${jdbc.password}" />		
+	<property name="initialPoolSize" value="${cpool.minPoolSize}"/>	
+	<property name="minPoolSize" value="${cpool.minPoolSize}" />	
+	<property name="maxPoolSize" value="${cpool.maxPoolSize}" />	
+	<property name="acquireIncrement" value="${cpool.acquireIncrement}" /> 
+    <property name="maxIdleTime" value="${cpool.maxIdleTime}"/>   
+	</bean>		
+	
+	<!--Hibernate SessionFatory-->
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+	    <property name="dataSource" ref="dataSource"/>
+		<property name="packagesToScan">
+			<list>
+				<value>com.sundoctor.example.model</value>				
+			</list>
+		</property>	
+	    <property name="hibernateProperties">
+	        <props>
+	            <prop key="hibernate.dialect">
+	                ${hibernate.dialect}
+	            </prop>
+	            <prop key="hibernate.show_sql">
+	                ${hibernate.show_sql}
+	            </prop>
+	            <prop key="hibernate.format_sql">
+	                ${hibernate.format_sql}
+	            </prop>
+	            <prop key="hibernate.cache.provider_class">
+	                ${hibernate.cache.provider_class}
+	            </prop>
+	            <prop key="hibernate.cache.use_query_cache">
+	                ${hibernate.cache.use_query_cache}
+	            </prop> 
+				<prop key="hibernate.connection.provider_class">${hibernate.connection.provider_class}</prop>  
+				<prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl.auto}</prop>        
+	        </props>
+	    </property>
+	</bean>	
+	
+	<!--Hibernate TransactionManager-->
+	<bean id="transactionManager"  class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+	    <property name="sessionFactory" ref="sessionFactory"/>
+	</bean>		
+
+	<tx:advice id="txAdvice">
+	    <tx:attributes>
+	        <tx:method name="get*" read-only="true"/>
+	        <tx:method name="find*" read-only="true"/>
+	        <tx:method name="query*" read-only="true"/>
+	        <tx:method name="*"/>
+	    </tx:attributes>
+	</tx:advice>
+	
+	<aop:config proxy-target-class="true">
+	    <aop:advisor pointcut="execution(* com.sundoctor.quartz.service..*Service.*(..))" advice-ref="txAdvice"/>
+	</aop:config>	
+		
+
+</beans>
