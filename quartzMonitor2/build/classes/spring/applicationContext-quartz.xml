@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN 2.0//EN" "http://www.springframework.org/dtd/spring-beans-2.0.dtd">
+<beans>
+    <bean name="quartzScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="applicationContextSchedulerContextKey" value="applicationContextKey"/>
+        <property name="configLocation" value="classpath:quartz.properties"/>		
+		<!--这个是必须的，QuartzScheduler 延时启动，应用启动完后 QuartzScheduler 再启动-->
+		<property name="startupDelay" value="30"/>		
+		<!--这个是可选，QuartzScheduler 启动时更新己存在的Job，这样就不用每次修改targetObject后删除qrtz_job_details表对应记录了-->
+		<property name="overwriteExistingJobs" value="true"/>
+		<property name="jobDetails" >
+			<list>
+				<ref bean="jobDetail"/>
+			</list>	
+		</property>			
+    </bean>    
+    <bean id="jobDetail" class="frameworkx.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <!--shouldRecover属性为true，则当Quartz服务被中止后，再次启动任务时会尝试恢复执行之前未完成的所有任务-->
+		<property name="shouldRecover" value="true"/>
+        <property name="targetObject" ref="customerService"/>
+        <property name="targetMethod" value="testMethod1"/>
+    </bean>    
+</beans>
